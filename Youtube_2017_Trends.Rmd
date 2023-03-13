@@ -1,0 +1,121 @@
+---
+title: "Final Project"
+author: "James Hopham"
+date: "2022-10-02"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+library(tidyverse)
+usyoutube<-read_csv("USvideos.csv")
+usyoutube
+
+dim(usyoutube)
+
+uscategories<-read_csv("uscategories.csv")
+uscategories
+
+usyoutube<-inner_join(usyoutube, uscategories, by = "category_id", na.rm = TRUE)
+view(usyoutube)
+```
+
+```{r}
+filter(usyoutube, comments_disabled == "TRUE")
+```
+
+```{r}
+filter(usyoutube, comments_disabled == "FALSE")
+
+```
+
+```{r}
+usyoutube <- mutate(usyoutube, num_likes_dislikes = likes+dislikes)
+usyoutube
+```
+
+```{r}
+ggplot(usyoutube)+
+  geom_bar(aes(x=comments_disabled))+
+  labs(x="Comments Disabled (FALSE/TRUE)",
+       y="Number of Trending Videos",
+       title="Frequency of Trending Videos with Comments Disabled")
+```
+
+
+```{r}
+ggplot(usyoutube,aes(x=num_likes_dislikes, y=views,
+color=comments_disabled))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  labs(x="Sum of Likes and Dislikes",
+       y="Number of Views",
+       title="Relationship Between Views, Likes/Dislikes, and Ability to Comment")
+```
+
+
+```{r}
+ggplot(usyoutube)+
+  geom_point(aes(x=comment_count, y=views))+
+  geom_smooth(aes(x=comment_count,y=views),
+  se=F, method="lm")+
+  labs(x="Number of Comments",
+       y="Number of Views",
+       title="Relationship Between #Comments and #Views")
+```
+
+
+
+```{r}
+library(tidytext)
+
+usyoutubetag <- tibble(
+  video_id = usyoutube$video_id,
+  text = usyoutube$tags,
+  )
+
+
+usyoutubetag %>%
+  unnest_tokens(word, text)
+
+usyoutubetag %>%
+unnest_tokens(word, text) %>%
+count(word, sort = TRUE)
+
+tag_word_freq <- usyoutubetag %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words) %>%
+  count(word, sort = TRUE)
+
+tag_word_freq
+```
+
+```{r}
+tag_word_freq %>%
+  filter(n > 2500) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col() +
+  ylab("") +
+  xlab("Total Number of Times Used")+
+  ggtitle("Most Common Tag Words")
+```
+```{r}
+categoryusyoutube <- select(usyoutube, views, category_name) %>% 
+  group_by(category_name) %>%
+  summarize(
+  category_name_viewtotal = sum(views))
+
+categoryusyoutube<- arrange(categoryusyoutube, desc(category_name_viewtotal))
+ 
+top10category<-slice_head(categoryusyoutube, n = 10) 
+top10category
+```
+
